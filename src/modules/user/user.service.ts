@@ -4,6 +4,10 @@ import { Repository } from 'typeorm';
 import { User } from './user.entity';
 import * as bcrypt from 'bcrypt';
 import { AuthService } from '../../auth/auth.service';
+import { MESSAGES } from '../../common/constants/message.constants';
+import { STATUS } from '../../common/constants/app.constants';
+import { InternalServerErrorException } from '@nestjs/common';
+
 @Injectable()
 export class UserService {
     constructor(
@@ -13,68 +17,81 @@ export class UserService {
     ) { }
 
     async registerUser(data: any) {
-        const { name, email, password } = data
-        const checkEmailExists = await this.isEmailExists(email);
-        if (checkEmailExists) {
+        try {
+            const { name, email, password } = data
+            const checkEmailExists = await this.isEmailExists(email);
+            if (checkEmailExists) {
+                return {
+                    status: STATUS.INACTIVE,
+                    message: MESSAGES.USER_ALREADY_EXISTS
+                };
+            }
+            const hashedPassword = await bcrypt.hash(password, 10);
+            const user = this.userRepo.create({
+                name,
+                email,
+                password: hashedPassword,
+            });
+            const result = await this.userRepo.save(user);
+            const { password: _, ...safeUser } = result;
             return {
-                status: false,
-                message: 'User already registered'
+                status: STATUS.ACTIVE,
+                message: MESSAGES.USER_CREATED,
+                safeUser
             };
+        } catch (error) {
+            console.error(error);
+            throw new InternalServerErrorException(
+                MESSAGES.INTERNAL_SERVER_ERROR,
+            );
         }
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const user = this.userRepo.create({
-            name,
-            email,
-            password: hashedPassword,
-        });
-        const result = await this.userRepo.save(user);
-        const { password: _, ...safeUser } = result;
-        return {
-            status: true,
-            message: 'User registered successfully',
-            safeUser
-        };
     }
 
     async loginUser(data: any) {
-        const { name, email, password } = data
-        const checkEmailExists = await this.isEmailExists(email);
-        if (!checkEmailExists) {
-            return {
-                status: false,
-                message: 'Invalid credentials'
-            };
-        }
-        const isMatch = await bcrypt.compare(password, checkEmailExists.password);
-        if (isMatch) {
-            const jwtToken = await this.authService.loginUser(checkEmailExists);
-            const { password: _, ...safeUser } = checkEmailExists;
-            return {
-                status: true,
-                message: 'Login successfully',
-                data: {
-                    ...safeUser,
-                    access_token: "Bearer "+jwtToken.access_token,
-                },
-            };
-        } else {
-            return {
-                status: false,
-                message: 'Invalid credentials'
-            };
+        try {
+            const { name, email, password } = data
+            const checkEmailExists = await this.isEmailExists(email);
+            if (!checkEmailExists) {
+                return {
+                    status: STATUS.INACTIVE,
+                    message: MESSAGES.INVALID_CREDENTIALS
+                };
+            }
+            const isMatch = await bcrypt.compare(password, checkEmailExists.password);
+            if (isMatch) {
+                const jwtToken = await this.authService.loginUser(checkEmailExists);
+                const { password: _, ...safeUser } = checkEmailExists;
+                return {
+                    status: STATUS.ACTIVE,
+                    message: MESSAGES.LOGIN_SUCCESS,
+                    data: {
+                        ...safeUser,
+                        access_token: "Bearer " + jwtToken.access_token,
+                    },
+                };
+            } else {
+                return {
+                    status: STATUS.INACTIVE,
+                    message: MESSAGES.INVALID_CREDENTIALS
+                };
+            }
+        } catch (error) {
+            console.error(error);
+            throw new InternalServerErrorException(
+                MESSAGES.INTERNAL_SERVER_ERROR,
+            );
         }
     }
 
     async userProfile() {
-        console.log("hello")
         return {
-            status: true,
+            status: STATUS.ACTIVE,
             message: 'Login successfully',
             data: "Check It "
         };
     }
 
-    async isEmailExists(email) {
+    async isEmailExists(email: string) {
         const user = await this.userRepo.findOne({
             where: { email },
         });
