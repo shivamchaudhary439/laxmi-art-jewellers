@@ -7,6 +7,7 @@ import { typeOrmConfig } from './database/typeorm.config';
 import { UserModule } from './modules/user/user.module';
 import { AuthService } from './auth/auth.service';
 import { AuthModule } from './auth/auth.module';
+import { CryptoModule } from './crypto/crypto.module';
 
 @Module({
   imports: [
@@ -15,7 +16,8 @@ import { AuthModule } from './auth/auth.module';
     }),
     TypeOrmModule.forRoot(typeOrmConfig),
     UserModule,
-    AuthModule
+    AuthModule,
+    CryptoModule
   ],
   controllers: [AppController],
   providers: [AppService, AuthService],

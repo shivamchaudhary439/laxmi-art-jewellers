@@ -7,6 +7,7 @@ import { AuthService } from '../../auth/auth.service';
 import { MESSAGES } from '../../common/constants/message.constants';
 import { STATUS } from '../../common/constants/app.constants';
 import { InternalServerErrorException } from '@nestjs/common';
+import { CryptoService } from '../../crypto/crypto.service';
 
 @Injectable()
 export class UserService {
@@ -14,6 +15,7 @@ export class UserService {
         @InjectRepository(User)
         private userRepo: Repository<User>,
         private readonly authService: AuthService,
+        private readonly cryptoService: CryptoService,
     ) { }
 
     async registerUser(data: any) {
@@ -51,6 +53,21 @@ export class UserService {
         try {
             const { name, email, password } = data
             const checkEmailExists = await this.isEmailExists(email);
+           
+            const encrypted = this.cryptoService.encrypt({
+                name: 'Shivam',
+                email: 'shivam@gmail.com',
+            });
+            // if (encrypted.startsWith('ENC:')) {
+            //     console.log('Encrypted', encrypted);
+            // } else {
+            //     console.log('Plain Text');
+            // }
+            // console.log('Encrypted:', encrypted);
+            
+            const decrypted = this.cryptoService.decrypt(encrypted);
+
+            console.log('Decrypted:', decrypted);
             if (!checkEmailExists) {
                 return {
                     status: STATUS.INACTIVE,
