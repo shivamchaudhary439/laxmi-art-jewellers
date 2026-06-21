@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -30,11 +30,20 @@ export class CryptoService {
     }
 
     decrypt(encryptedData: string): any {
-        const actualEncryptedData = encryptedData.replace('ENC:', '');
-        const decrypted = crypto.privateDecrypt(
-            this.privateKey,
-            Buffer.from(actualEncryptedData, 'base64'),
-        );
-        return JSON.parse(decrypted.toString());
+        try {
+            const actualEncryptedData = encryptedData.replace('ENC:', '');
+            const decrypted = crypto.privateDecrypt(
+                this.privateKey,
+                Buffer.from(actualEncryptedData, 'base64'),
+            );
+            return JSON.parse(decrypted.toString());
+        } catch (error) {
+            // console.error('Decrypt Error:', error);
+            throw new BadRequestException({
+                status: 'FAILED',
+                message: 'Invalid encrypted data',
+            });
+        }
+
     }
 }

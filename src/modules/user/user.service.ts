@@ -1,14 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, HttpException, Injectable, HttpStatus, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './user.entity';
 import * as bcrypt from 'bcrypt';
 import { AuthService } from '../../auth/auth.service';
 import { MESSAGES } from '../../common/constants/message.constants';
-import { STATUS } from '../../common/constants/app.constants';
+import { STATUS, BOOLEAN } from '../../common/constants/app.constants';
 import { InternalServerErrorException } from '@nestjs/common';
 import { CryptoService } from '../../crypto/crypto.service';
-
+// import { HttpException, HttpStatus } from '@nestjs/common';
 @Injectable()
 export class UserService {
     constructor(
@@ -51,23 +51,60 @@ export class UserService {
 
     async loginUser(data: any) {
         try {
-            const { name, email, password } = data
+            const { name, email, password, details } = data
             const checkEmailExists = await this.isEmailExists(email);
-           
-            const encrypted = this.cryptoService.encrypt({
-                name: 'Shivam',
-                email: 'shivam@gmail.com',
-            });
+
+            // const encrypted = this.cryptoService.encrypt({
+            //     name,
+            //     email,
+            //     password
+            // });
+            // console.log(encrypted)
             // if (encrypted.startsWith('ENC:')) {
             //     console.log('Encrypted', encrypted);
             // } else {
             //     console.log('Plain Text');
             // }
             // console.log('Encrypted:', encrypted);
-            
-            const decrypted = this.cryptoService.decrypt(encrypted);
+            console.log('Encrypted:');
+            // const decrypted = this.cryptoService.decrypt(details);
+            // console.log('decrypted:', decrypted.response);
+            try {
+                const decrypted = this.cryptoService.decrypt(details);
+                console.log('decrypted:', decrypted);
+                // aage ka logic
+            } catch (error) {
+                // console.log('Decrypt Error:', error);
+                console.error("error ",error);
+                 throw new HttpException(
+                    {
+                        status: STATUS.INACTIVE,
+                        message:  MESSAGES.INTERNAL_SERVER_ERROR,
+                    },
+                    HttpStatus.FORBIDDEN,
+                );
+                // throw new BadRequestException(
+                //     MESSAGES.INTERNAL_SERVER_ERROR,
+                // );
+                // return {
+                //     status: STATUS.INACTIVE,
+                //     message: 'Invalid encrypted data',
+                // };
+            }
+            // if (decrypted.status === BOOLEAN.FALSE) {
+            //     console.log("fhagghldsak")
+            //     throw new HttpException(
+            //         {
+            //             status: STATUS.INACTIVE,
+            //             message: decrypted.message,
+            //         },
 
-            console.log('Decrypted:', decrypted);
+            //         HttpStatus.FORBIDDEN,
+            //     );
+            // }
+            // console.log("decrypted ", decrypted)
+
+
             if (!checkEmailExists) {
                 return {
                     status: STATUS.INACTIVE,

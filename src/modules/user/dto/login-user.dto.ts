@@ -21,4 +21,11 @@ export class UserLoginDto {
         { message: 'Password must be 8+ chars with uppercase, lowercase, number & symbol' }
     )
     password!: string;
+
+    @ApiProperty({
+        required: true,
+        example: 'eB6CuwYokHwjtQ7q3nBwxYv'
+    })
+    @IsString()
+    details!: string;
 }
